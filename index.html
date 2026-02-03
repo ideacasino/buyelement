@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buy Element — Live Market Prices</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.06);
+    --text: #1d1d1f;
+    --text2: #86868b;
+    --text3: #aeaeb2;
+    --hover: rgba(0,0,0,0.03);
+    --modal-bg: rgba(255,255,255,0.92);
+    --modal-card: #ffffff;
+    --overlay: rgba(0,0,0,0.25);
+    --green: #248a3d;
+    --separator: rgba(0,0,0,0.06);
+    --toggle-bg: #e5e5ea;
+    --toggle-knob: #ffffff;
+    /* category tints */
+    --alkali: rgba(255,59,48,0.16);
+    --alkaline: rgba(255,149,0,0.15);
+    --transition: rgba(0,122,255,0.12);
+    --post-transition: rgba(52,199,89,0.12);
+    --metalloid: rgba(255,204,0,0.14);
+    --nonmetal: rgba(88,86,214,0.12);
+    --halogen: rgba(175,82,222,0.12);
+    --noble: rgba(255,45,85,0.12);
+    --lanthanide: rgba(0,199,190,0.12);
+    --actinide: rgba(162,132,94,0.12);
+    --unknown: rgba(142,142,147,0.10);
+  }
+
+  [data-theme="dark"] {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --border: rgba(255,255,255,0.08);
+    --text: #f5f5f7;
+    --text2: #98989d;
+    --text3: #636366;
+    --hover: rgba(255,255,255,0.05);
+    --modal-bg: rgba(28,28,30,0.92);
+    --modal-card: #2c2c2e;
+    --overlay: rgba(0,0,0,0.55);
+    --green: #30d158;
+    --separator: rgba(255,255,255,0.06);
+    --toggle-bg: #3a3a3c;
+    --toggle-knob: #ffffff;
+    --alkali: rgba(255,69,58,0.20);
+    --alkaline: rgba(255,159,10,0.18);
+    --transition: rgba(10,132,255,0.16);
+    --post-transition: rgba(48,209,88,0.16);
+    --metalloid: rgba(255,214,10,0.16);
+    --nonmetal: rgba(94,92,230,0.16);
+    --halogen: rgba(191,90,242,0.16);
+    --noble: rgba(255,55,95,0.16);
+    --lanthanide: rgba(100,210,255,0.16);
+    --actinide: rgba(172,142,104,0.16);
+    --unknown: rgba(72,72,74,0.22);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 0;
+    max-width: 1420px; margin: 0 auto;
+  }
+  .header-left h1 {
+    font-size: 22px; font-weight: 600; letter-spacing: -0.02em;
+  }
+  .header-left p {
+    font-size: 12px; color: var(--text2); margin-top: 2px;
+  }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  #status-bar { font-size: 11px; color: var(--text3); }
+
+  /* Theme toggle */
+  .toggle-wrap {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text2);
+  }
+  .toggle {
+    width: 42px; height: 24px; border-radius: 12px;
+    background: var(--toggle-bg); position: relative;
+    cursor: pointer; transition: background 0.2s;
+    border: none; outline: none; padding: 0;
+  }
+  .toggle::after {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--toggle-knob);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+  }
+  [data-theme="dark"] .toggle { background: #0a84ff; }
+  [data-theme="dark"] .toggle::after { transform: translateX(18px); }
+
+  /* Legend */
+  #legend {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 6px; padding: 10px 24px 6px;
+    font-size: 10px; color: var(--text2);
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* Grid */
+  #table-wrap { padding: 6px 12px; overflow-x: auto; }
+  #periodic-table {
+    display: grid;
+    grid-template-columns: repeat(18, minmax(62px, 1fr));
+    grid-template-rows: repeat(10, auto);
+    gap: 3px;
+    min-width: 1140px; max-width: 1400px; margin: 0 auto;
+  }
+
+  /* Element cell */
+  .el {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px 5px;
+    cursor: pointer;
+    min-height: 64px;
+    display: flex; flex-direction: column; justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.3s, border-color 0.3s;
+    overflow: hidden;
+  }
+  .el:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  [data-theme="dark"] .el:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .el .num { font-size: 9px; color: var(--text3); line-height: 1; font-weight: 500; }
+  .el .sym { font-size: 17px; font-weight: 600; line-height: 1.2; color: var(--text); }
+  .el .name {
+    font-size: 7.5px; color: var(--text2); line-height: 1.1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    letter-spacing: 0.01em;
+  }
+  .el .price {
+    font-size: 8.5px; font-weight: 500;
+    margin-top: 2px; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .price.live-price { color: var(--green); font-weight: 600; }
+  .price.static-price { color: var(--text); }
+  .price.no-price { color: var(--text3); }
+
+  /* Category backgrounds */
+  .cat-alkali { background: var(--alkali); }
+  .cat-alkaline { background: var(--alkaline); }
+  .cat-transition { background: var(--transition); }
+  .cat-post-transition { background: var(--post-transition); }
+  .cat-metalloid { background: var(--metalloid); }
+  .cat-nonmetal { background: var(--nonmetal); }
+  .cat-halogen { background: var(--halogen); }
+  .cat-noble { background: var(--noble); }
+  .cat-lanthanide { background: var(--lanthanide); }
+  .cat-actinide { background: var(--actinide); }
+  .cat-unknown { background: var(--unknown); }
+
+  .spacer-label {
+    font-size: 9px; color: var(--text2); font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Modal */
+  #modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: var(--overlay);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    z-index: 100; justify-content: center; align-items: center;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--modal-card);
+    border-radius: 16px;
+    padding: 28px 28px 24px;
+    max-width: 400px; width: 90%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    position: relative;
+    animation: modalIn 0.2s ease;
+    transition: background 0.3s;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  #modal .close-btn {
+    position: absolute; top: 12px; right: 12px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--hover); border: none;
+    color: var(--text2); font-size: 14px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  #modal .close-btn:hover { background: var(--separator); }
+  .modal-num { font-size: 12px; color: var(--text3); font-weight: 400; }
+  .modal-sym { font-size: 40px; font-weight: 700; color: var(--text); line-height: 1; }
+  .modal-name { font-size: 18px; font-weight: 400; color: var(--text2); margin-bottom: 12px; }
+  .modal-price { font-size: 28px; font-weight: 700; color: var(--green); line-height: 1.1; }
+  .modal-price.no-price { color: var(--text3); font-size: 18px; }
+  .modal-unit { font-size: 11px; color: var(--text3); margin-bottom: 16px; }
+  .detail-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; padding: 8px 0;
+    border-bottom: 1px solid var(--separator);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: var(--text2); }
+  .detail-value { font-weight: 500; color: var(--text); }
+  .modal-note { font-size: 11px; color: var(--text3); margin-top: 10px; line-height: 1.4; }
+
+  /* Buy button */
+  .buy-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 14px; padding: 8px 16px;
+    border-radius: 8px; border: none;
+    background: #0a84ff; color: #fff;
+    font-size: 13px; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer; text-decoration: none;
+    transition: background 0.15s;
+  }
+  .buy-btn:hover { background: #0070e0; }
+  .buy-btn.hyperliquid { background: #50e2c4; color: #000; }
+  .buy-btn.hyperliquid:hover { background: #3dd4b4; }
+  .buy-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Footer */
+  footer {
+    text-align: center; padding: 12px;
+    font-size: 10px; color: var(--text3);
+  }
+  footer a { color: var(--text2); text-decoration: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <h1>Buy Element</h1>
+    <p>Buy any element on the periodic table</p>
+  </div>
+  <div class="header-right">
+    <span id="status-bar">Loading...</span>
+    <div class="toggle-wrap">
+      <span id="theme-label">Light</span>
+      <button class="toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode"></button>
+    </div>
+  </div>
+</header>
+<div id="legend"></div>
+<div id="table-wrap">
+  <div id="periodic-table"></div>
+</div>
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal">
+    <button class="close-btn" onclick="closeModal()">&times;</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+<footer>
+  Real-time and reference prices per troy ounce in USD.
+  <br>Built by <a href="https://x.com/ideacasino" target="_blank" rel="noopener">@ideacasino</a>
+</footer>
+
+<script>
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-label').textContent = isDark ? 'Light' : 'Dark';
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+// Restore saved preference
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('theme-label').textContent = 'Dark';
+  }
+})();
+
+// ── DATA ──
+const ELEMENTS = [
+  [1,"H","Hydrogen","nonmetal",1,1,1.008,0.004,"Industrial gas",null],
+  [2,"He","Helium","noble",1,18,4.003,0.47,"Industrial gas",null],
+  [3,"Li","Lithium","alkali",2,1,6.941,0.31,"Battery metal","LITHIUM"],
+  [4,"Be","Beryllium","alkaline",2,2,9.012,24,"Strategic metal",null],
+  [5,"B","Boron","metalloid",2,13,10.81,0.16,"Industrial",null],
+  [6,"C","Carbon","nonmetal",2,14,12.011,0.00007,"Graphite price",null],
+  [7,"N","Nitrogen","nonmetal",2,15,14.007,0.008,"Industrial gas",null],
+  [8,"O","Oxygen","nonmetal",2,16,15.999,0.005,"Industrial gas",null],
+  [9,"F","Fluorine","halogen",2,17,18.998,0.06,"Chemical",null],
+  [10,"Ne","Neon","noble",2,18,20.180,10.22,"Rare gas",null],
+  [11,"Na","Sodium","alkali",3,1,22.990,0.09,"Bulk chemical",null],
+  [12,"Mg","Magnesium","alkaline",3,2,24.305,0.08,"Light metal","MG"],
+  [13,"Al","Aluminum","post-transition",3,13,26.982,0.08,"LME traded","ALU"],
+  [14,"Si","Silicon","metalloid",3,14,28.086,0.06,"Semiconductor",null],
+  [15,"P","Phosphorus","nonmetal",3,15,30.974,0.009,"Chemical",null],
+  [16,"S","Sulfur","nonmetal",3,16,32.065,0.003,"Bulk chemical",null],
+  [17,"Cl","Chlorine","halogen",3,17,35.453,0.003,"Bulk chemical",null],
+  [18,"Ar","Argon","noble",3,18,39.948,0.02,"Industrial gas",null],
+  [19,"K","Potassium","alkali",4,1,39.098,0.04,"Bulk chemical",null],
+  [20,"Ca","Calcium","alkaline",4,2,40.078,0.06,"Bulk metal",null],
+  [21,"Sc","Scandium","transition",4,3,44.956,124,"Rare metal",null],
+  [22,"Ti","Titanium","transition",4,4,47.867,0.34,"Aerospace metal","TITANIUM"],
+  [23,"V","Vanadium","transition",4,5,50.942,0.93,"Steel alloy",null],
+  [24,"Cr","Chromium","transition",4,6,51.996,0.30,"Steel alloy",null],
+  [25,"Mn","Manganese","transition",4,7,54.938,0.06,"Steel alloy",null],
+  [26,"Fe","Iron","transition",4,8,55.845,0.003,"Most common metal",null],
+  [27,"Co","Cobalt","transition",4,9,58.933,0.93,"Battery metal","LCO"],
+  [28,"Ni","Nickel","transition",4,10,58.693,0.49,"LME traded","NI"],
+  [29,"Cu","Copper","transition",4,11,63.546,0.28,"LME traded","XCU"],
+  [30,"Zn","Zinc","transition",4,12,65.380,0.09,"LME traded","ZNC"],
+  [31,"Ga","Gallium","post-transition",4,13,69.723,9.33,"Tech metal","GALLIUM"],
+  [32,"Ge","Germanium","metalloid",4,14,72.630,46.66,"Tech metal","GER"],
+  [33,"As","Arsenic","metalloid",4,15,74.922,0.03,"Industrial",null],
+  [34,"Se","Selenium","nonmetal",4,16,78.971,0.62,"Tech metal",null],
+  [35,"Br","Bromine","halogen",4,17,79.904,0.12,"Chemical",null],
+  [36,"Kr","Krypton","noble",4,18,83.798,10.70,"Rare gas",null],
+  [37,"Rb","Rubidium","alkali",5,1,85.468,37,"Rare alkali",null],
+  [38,"Sr","Strontium","alkaline",5,2,87.620,0.19,"Industrial",null],
+  [39,"Y","Yttrium","transition",5,3,88.906,0.93,"Rare earth",null],
+  [40,"Zr","Zirconium","transition",5,4,91.224,0.47,"Nuclear/industrial",null],
+  [41,"Nb","Niobium","transition",5,5,92.906,1.87,"Steel alloy",null],
+  [42,"Mo","Molybdenum","transition",5,6,95.950,1.87,"Steel alloy","MO"],
+  [43,"Tc","Technetium","transition",5,7,98,null,"No stable isotopes",null],
+  [44,"Ru","Ruthenium","transition",5,8,101.07,600,"PGM","RUTH"],
+  [45,"Rh","Rhodium","transition",5,9,102.91,5500,"PGM","XRH"],
+  [46,"Pd","Palladium","transition",5,10,106.42,950,"PGM","XPD"],
+  [47,"Ag","Silver","transition",5,11,107.87,31,"Precious metal","XAG"],
+  [48,"Cd","Cadmium","transition",5,12,112.41,0.07,"Industrial",null],
+  [49,"In","Indium","post-transition",5,13,114.82,7.47,"Tech metal","INDIUM"],
+  [50,"Sn","Tin","post-transition",5,14,118.71,0.96,"LME traded","TIN"],
+  [51,"Sb","Antimony","metalloid",5,15,121.76,0.37,"Industrial",null],
+  [52,"Te","Tellurium","metalloid",5,16,127.60,1.87,"Tech metal","TE"],
+  [53,"I","Iodine","halogen",5,17,126.90,1.09,"Chemical",null],
+  [54,"Xe","Xenon","noble",5,18,131.29,36.50,"Rare gas",null],
+  [55,"Cs","Cesium","alkali",6,1,132.91,234,"Rare alkali",null],
+  [56,"Ba","Barium","alkaline",6,2,137.33,0.08,"Industrial",null],
+  [72,"Hf","Hafnium","transition",6,4,178.49,28,"Nuclear/aerospace","HAF"],
+  [73,"Ta","Tantalum","transition",6,5,180.95,9.33,"Capacitor metal",null],
+  [74,"W","Tungsten","transition",6,6,183.84,1.09,"Heavy metal","TUNGSTEN"],
+  [75,"Re","Rhenium","transition",6,7,186.21,93,"Superalloy","RHENIUM"],
+  [76,"Os","Osmium","transition",6,8,190.23,400,"PGM","OSMIUM"],
+  [77,"Ir","Iridium","transition",6,9,192.22,4800,"PGM","IRD"],
+  [78,"Pt","Platinum","transition",6,10,195.08,950,"Precious metal","XPT"],
+  [79,"Au","Gold","transition",6,11,196.97,2750,"Precious metal","XAU"],
+  [80,"Hg","Mercury","transition",6,12,200.59,0.93,"Restricted trade",null],
+  [81,"Tl","Thallium","post-transition",6,13,204.38,155,"Toxic/rare",null],
+  [82,"Pb","Lead","post-transition",6,14,207.20,0.06,"LME traded","LEAD"],
+  [83,"Bi","Bismuth","post-transition",6,15,208.98,0.19,"Industrial",null],
+  [84,"Po","Polonium","post-transition",6,16,209,null,"Highly radioactive",null],
+  [85,"At","Astatine","halogen",6,17,210,null,"Rarest natural element",null],
+  [86,"Rn","Radon","noble",6,18,222,null,"Radioactive gas",null],
+  [87,"Fr","Francium","alkali",7,1,223,null,"Most unstable nat. element",null],
+  [88,"Ra","Radium","alkaline",7,2,226,null,"Radioactive",null],
+  [104,"Rf","Rutherfordium","unknown",7,4,267,null,"Synthetic",null],
+  [105,"Db","Dubnium","unknown",7,5,268,null,"Synthetic",null],
+  [106,"Sg","Seaborgium","unknown",7,6,269,null,"Synthetic",null],
+  [107,"Bh","Bohrium","unknown",7,7,270,null,"Synthetic",null],
+  [108,"Hs","Hassium","unknown",7,8,277,null,"Synthetic",null],
+  [109,"Mt","Meitnerium","unknown",7,9,278,null,"Synthetic",null],
+  [110,"Ds","Darmstadtium","unknown",7,10,281,null,"Synthetic",null],
+  [111,"Rg","Roentgenium","unknown",7,11,282,null,"Synthetic",null],
+  [112,"Cn","Copernicium","unknown",7,12,285,null,"Synthetic",null],
+  [113,"Nh","Nihonium","unknown",7,13,286,null,"Synthetic",null],
+  [114,"Fl","Flerovium","unknown",7,14,289,null,"Synthetic",null],
+  [115,"Mc","Moscovium","unknown",7,15,290,null,"Synthetic",null],
+  [116,"Lv","Livermorium","unknown",7,16,293,null,"Synthetic",null],
+  [117,"Ts","Tennessine","unknown",7,17,294,null,"Synthetic",null],
+  [118,"Og","Oganesson","unknown",7,18,294,null,"Synthetic",null],
+  [57,"La","Lanthanum","lanthanide",9,3,138.91,0.15,"Rare earth","LTH"],
+  [58,"Ce","Cerium","lanthanide",9,4,140.12,0.15,"Rare earth",null],
+  [59,"Pr","Praseodymium","lanthanide",9,5,140.91,3.11,"Rare earth","PRA"],
+  [60,"Nd","Neodymium","lanthanide",9,6,144.24,4.98,"Magnet metal","ND"],
+  [61,"Pm","Promethium","lanthanide",9,7,145,null,"No stable isotopes",null],
+  [62,"Sm","Samarium","lanthanide",9,8,150.36,0.22,"Rare earth",null],
+  [63,"Eu","Europium","lanthanide",9,9,151.96,1.04,"Rare earth",null],
+  [64,"Gd","Gadolinium","lanthanide",9,10,157.25,0.93,"MRI contrast",null],
+  [65,"Tb","Terbium","lanthanide",9,11,158.93,31.10,"Green phosphor","TER"],
+  [66,"Dy","Dysprosium","lanthanide",9,12,162.50,9.95,"Magnet metal","DYS"],
+  [67,"Ho","Holmium","lanthanide",9,13,164.93,2.49,"Rare earth",null],
+  [68,"Er","Erbium","lanthanide",9,14,167.26,0.93,"Fiber optics",null],
+  [69,"Tm","Thulium","lanthanide",9,15,168.93,93,"Rare earth",null],
+  [70,"Yb","Ytterbium","lanthanide",9,16,173.05,5.60,"Rare earth",null],
+  [71,"Lu","Lutetium","lanthanide",9,17,174.97,187,"Rarest stable RE",null],
+  [89,"Ac","Actinium","actinide",10,3,227,null,"Research isotope",null],
+  [90,"Th","Thorium","actinide",10,4,232.04,0.93,"Nuclear fuel",null],
+  [91,"Pa","Protactinium","actinide",10,5,231.04,124400,"Extremely rare",null],
+  [92,"U","Uranium","actinide",10,6,238.03,2.80,"Nuclear fuel","URANIUM"],
+  [93,"Np","Neptunium","actinide",10,7,237,20530,"Research only",null],
+  [94,"Pu","Plutonium","actinide",10,8,244,124000,"Controlled",null],
+  [95,"Am","Americium","actinide",10,9,243,46660,"Smoke detectors",null],
+  [96,"Cm","Curium","actinide",10,10,247,4975000,"Research only",null],
+  [97,"Bk","Berkelium","actinide",10,11,247,null,"Barely produced",null],
+  [98,"Cf","Californium","actinide",10,12,251,777500000,"Neutron source",null],
+  [99,"Es","Einsteinium","actinide",10,13,252,null,"Picogram quantities",null],
+  [100,"Fm","Fermium","actinide",10,14,257,null,"Synthetic",null],
+  [101,"Md","Mendelevium","actinide",10,15,258,null,"Synthetic",null],
+  [102,"No","Nobelium","actinide",10,16,259,null,"Synthetic",null],
+  [103,"Lr","Lawrencium","actinide",10,17,266,null,"Synthetic",null],
+];
+const MARKERS = [
+  { row: 6, col: 3, label: "57-71", sub: "La\u2013Lu", cat: "lanthanide" },
+  { row: 7, col: 3, label: "89-103", sub: "Ac\u2013Lr", cat: "actinide" },
+];
+const CATEGORY_LABELS = {
+  alkali:"Alkali Metal", alkaline:"Alkaline Earth", transition:"Transition Metal",
+  "post-transition":"Post-Transition", metalloid:"Metalloid", nonmetal:"Nonmetal",
+  halogen:"Halogen", noble:"Noble Gas", lanthanide:"Lanthanide", actinide:"Actinide",
+  unknown:"Unknown Properties",
+};
+
+// ── BUY LINKS ──
+// Maps element Z to buy URLs. Gold & Silver use Hyperliquid perps.
+// Other traded metals link to commodity brokers / ETFs.
+const BUY_LINKS = {
+  // ── Existing commodity-traded metals ──
+  79: [
+    { label: "Trade on Hyperliquid", url: "https://app.hyperliquid.xyz/trade/xyz:GOLD", cls: "hyperliquid" },
+    { label: "Buy on APMEX", url: "https://www.apmex.com/category/10000/gold", cls: "" },
+  ],
+  47: [
+    { label: "Trade on Hyperliquid", url: "https://app.hyperliquid.xyz/trade/xyz:SILVER", cls: "hyperliquid" },
+    { label: "Buy on APMEX", url: "https://www.apmex.com/category/10100/silver", cls: "" },
+  ],
+  78: [{ label: "Buy on APMEX", url: "https://www.apmex.com/category/10400/platinum", cls: "" }],
+  46: [{ label: "Buy on APMEX", url: "https://www.apmex.com/category/11800/palladium", cls: "" }],
+  29: [
+    { label: "Trade on Hyperliquid", url: "https://app.hyperliquid.xyz/trade/xyz:COPPER", cls: "hyperliquid" },
+    { label: "Buy on CME", url: "https://www.cmegroup.com/markets/metals/base/copper.html", cls: "" },
+  ],
+  13: [{ label: "Buy on LME", url: "https://www.lme.com/en/metals/non-ferrous/lme-aluminium", cls: "" }],
+  28: [{ label: "Buy on LME", url: "https://www.lme.com/en/metals/non-ferrous/lme-nickel", cls: "" }],
+  30: [{ label: "Buy on LME", url: "https://www.lme.com/en/metals/non-ferrous/lme-zinc", cls: "" }],
+  50: [{ label: "Buy on LME", url: "https://www.lme.com/en/metals/non-ferrous/lme-tin", cls: "" }],
+  82: [{ label: "Buy on LME", url: "https://www.lme.com/en/metals/non-ferrous/lme-lead", cls: "" }],
+  3:  [{ label: "Buy on CME", url: "https://www.cmegroup.com/markets/metals/battery-metals/lithium-hydroxide-cif-japan-south-korea.html", cls: "" }],
+  92: [{ label: "Buy on CME", url: "https://www.cmegroup.com/markets/metals/other/uranium.html", cls: "" }],
+  27: [{ label: "Buy on LME", url: "https://www.lme.com/en/metals/ev/lme-cobalt", cls: "" }],
+
+  // ── Gases (Z 1-2, 7-10, 17-18, 36, 54) ──
+  1: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/hydrogen-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/hydrogen/", cls: "" },
+  ],
+  2: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/helium-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/helium/", cls: "" },
+  ],
+  7: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/nitrogen-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/nitrogen/", cls: "" },
+  ],
+  8: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/oxygen-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/oxygen/", cls: "" },
+  ],
+  9: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/fluorine-gas-33", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/fluorine/", cls: "" },
+  ],
+  10: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/neon-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/neon/", cls: "" },
+  ],
+  17: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/chlorine-gas-999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/chlorine/", cls: "" },
+  ],
+  18: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/argon-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/argon/", cls: "" },
+  ],
+  36: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/krypton-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/krypton/", cls: "" },
+  ],
+  54: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/xenon-gas-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/xenon/", cls: "" },
+  ],
+
+  // ── Alkali Metals (Z 11, 19, 37, 55) ──
+  11: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-sodium-metal", cls: "" },
+    { label: "Buy on Metallium", url: "https://www.elementsales.com/pl_element_grp1.htm#na", cls: "" },
+  ],
+  19: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-potassium-metal", cls: "" },
+    { label: "Buy on Metallium", url: "https://www.elementsales.com/pl_element_grp1.htm#kk", cls: "" },
+  ],
+  37: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/rubidium-metal-9999", cls: "" },
+    { label: "Buy on Metallium", url: "https://www.elementsales.com/pl_element_grp1.htm#rb", cls: "" },
+  ],
+  55: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/cesium-metal-999", cls: "" },
+    { label: "Buy on Metallium", url: "https://www.elementsales.com/pl_element_grp1.htm#cs", cls: "" },
+  ],
+
+  // ── Alkaline Earth Metals (Z 4, 12, 20, 38, 56) ──
+  4: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-beryllium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/beryllium/", cls: "" },
+  ],
+  12: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-magnesium-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/magnesium/", cls: "" },
+  ],
+  20: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-calcium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/calcium/", cls: "" },
+  ],
+  38: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/strontium-metal-for-sale", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/strontium/", cls: "" },
+  ],
+  56: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-barium-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/barium/", cls: "" },
+  ],
+
+  // ── Metalloids & Nonmetals (Z 5, 6, 14, 15, 16, 33, 34, 51, 52) ──
+  5: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-boron-element", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/boron/", cls: "" },
+  ],
+  6: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/carbon", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/carbon/", cls: "" },
+  ],
+  14: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-silicon", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/silicon/", cls: "" },
+  ],
+  15: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/phosphorus-crystal-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/phosphorus/", cls: "" },
+  ],
+  16: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-sulfur", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/sulphur/", cls: "" },
+  ],
+  33: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-arsenic", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/arsenic/", cls: "" },
+  ],
+  34: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-selenium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/selenium/", cls: "" },
+  ],
+  51: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-antimony-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/antimony/", cls: "" },
+  ],
+  52: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-tellurium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/tellurium/", cls: "" },
+  ],
+
+  // ── Halogens (Z 35, 53) ──
+  35: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/bromine-liquid-999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/bromine/", cls: "" },
+  ],
+  53: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-iodine", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/iodine/", cls: "" },
+  ],
+
+  // ── Transition Metals (Z 21-26, 31-32, 39-45, 48-49, 72-77, 80-81, 83) ──
+  21: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/scandium-metal-9995-dendritic", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/scandium/", cls: "" },
+  ],
+  22: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-titanium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/titanium/", cls: "" },
+  ],
+  23: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-vanadium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/vanadium/", cls: "" },
+  ],
+  24: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-chromium-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/chromium/", cls: "" },
+  ],
+  25: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-manganese", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/manganese/", cls: "" },
+  ],
+  26: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/iron-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/iron/", cls: "" },
+  ],
+  31: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-gallium", cls: "" },
+    { label: "Buy on Amazon", url: "https://www.amazon.com/s?k=gallium+metal+element", cls: "" },
+  ],
+  32: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-germanium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/germanium/", cls: "" },
+  ],
+  39: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-yttrium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/yttrium/", cls: "" },
+  ],
+  40: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/zirconium-metal-999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/zirconium/", cls: "" },
+  ],
+  41: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/niobium-metal-9995-rods", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/niobium/", cls: "" },
+  ],
+  42: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-molybdenum", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/molybdenum/", cls: "" },
+  ],
+  43: [
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/technetium/", cls: "" },
+  ],
+  44: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-ruthenium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/ruthenium/", cls: "" },
+  ],
+  45: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-rhodium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/rhodium/", cls: "" },
+  ],
+  48: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/cadmium-metal-99999-sticks", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/cadmium/", cls: "" },
+  ],
+  49: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-indium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/indium/", cls: "" },
+  ],
+  72: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-hafnium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/hafnium/", cls: "" },
+  ],
+  73: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-tantalum", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/tantalum/", cls: "" },
+  ],
+  74: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-tungsten", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/tungsten/", cls: "" },
+  ],
+  75: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-rhenium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/rhenium/", cls: "" },
+  ],
+  76: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/osmium-metal-for-sale", cls: "" },
+    { label: "Buy on Metallium", url: "https://www.elementsales.com/pl_element.htm#os", cls: "" },
+  ],
+  77: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-iridium-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/iridium/", cls: "" },
+  ],
+  80: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/mercury-metal-999", cls: "" },
+    { label: "Buy on Metallium", url: "https://www.elementsales.com/pl_element.htm#hg", cls: "" },
+  ],
+  81: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/thallium-metal-9999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/thallium/", cls: "" },
+  ],
+  83: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-bismuth", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/bismuth/", cls: "" },
+  ],
+
+  // ── Lanthanides (Z 57-71) ──
+  57: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-lanthanum", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/lanthanum/", cls: "" },
+  ],
+  58: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-cerium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/cerium/", cls: "" },
+  ],
+  59: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-praseodymium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/praseodymium/", cls: "" },
+  ],
+  60: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-neodymium-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/neodymium/", cls: "" },
+  ],
+  61: [
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/promethium/", cls: "" },
+  ],
+  62: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/samarium-metal-999-dendritic", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/samarium/", cls: "" },
+  ],
+  63: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-europium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/europium/", cls: "" },
+  ],
+  64: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-gadolinium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/gadolinium/", cls: "" },
+  ],
+  65: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/terbium-metal-999-pieces", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/terbium/", cls: "" },
+  ],
+  66: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-dysprosium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/dysprosium/", cls: "" },
+  ],
+  67: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-holmium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/holmium/", cls: "" },
+  ],
+  68: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-erbium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/erbium/", cls: "" },
+  ],
+  69: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-thulium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/thulium/", cls: "" },
+  ],
+  70: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-ytterbium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/ytterbium/", cls: "" },
+  ],
+  71: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-lutetium", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/lutetium/", cls: "" },
+  ],
+
+  // ── Actinides (Z 88-95) ──
+  88: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/buy-radium-metal", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/radium/", cls: "" },
+  ],
+  89: [
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/actinium/", cls: "" },
+  ],
+  90: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/thorium-metal-999", cls: "" },
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/thorium/", cls: "" },
+    { label: "Buy on United Nuclear", url: "https://unitednuclear.com/index.php?main_page=product_info&products_id=1097", cls: "" },
+  ],
+  91: [
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/protactinium/", cls: "" },
+  ],
+  93: [
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/neptunium/", cls: "" },
+  ],
+  95: [
+    { label: "Buy on Nova Elements", url: "https://www.novaelements.com/americium/", cls: "" },
+  ],
+
+  // ── Radioactive / Rare (Z 84-87) ──
+  86: [
+    { label: "Buy on Luciteria", url: "https://www.luciteria.com/elements-for-sale/p/radon-gas", cls: "" },
+  ],
+};
+
+// ── HELPERS ──
+function formatPrice(p) {
+  if (p === null || p === undefined) return "N/A";
+  if (p >= 1000000) return "$" + (p / 1000000).toFixed(1) + "M";
+  if (p >= 10000) return "$" + (p / 1000).toFixed(1) + "k";
+  if (p >= 100) return "$" + p.toFixed(0);
+  if (p >= 1) return "$" + p.toFixed(2);
+  if (p >= 0.01) return "$" + p.toFixed(3);
+  if (p >= 0.001) return "$" + p.toFixed(4);
+  return "$" + p.toFixed(5);
+}
+
+// ── BUILD TABLE ──
+const tableEl = document.getElementById("periodic-table");
+function buildTable() {
+  ELEMENTS.forEach(el => {
+    const [z, sym, name, cat, row, col] = el;
+    const price = el[7];
+    const div = document.createElement("div");
+    div.className = `el cat-${cat}`;
+    div.style.gridRow = row;
+    div.style.gridColumn = col;
+    const pc = price === null ? "no-price" : "static-price";
+    div.innerHTML = `
+      <span class="num">${z}</span>
+      <span class="sym">${sym}</span>
+      <span class="name">${name}</span>
+      <span class="price ${pc}" data-z="${z}">${price === null ? "N/A" : formatPrice(price)}</span>
+    `;
+    div.onclick = () => showModal(z);
+    tableEl.appendChild(div);
+  });
+  MARKERS.forEach(m => {
+    const div = document.createElement("div");
+    div.className = `el cat-${m.cat}`;
+    div.style.gridRow = m.row;
+    div.style.gridColumn = m.col;
+    div.style.cursor = "default";
+    div.innerHTML = `<span class="sym" style="font-size:11px">${m.label}</span><span class="name">${m.sub}</span>`;
+    tableEl.appendChild(div);
+  });
+  [{ row: 9, label: "Lanthanides" }, { row: 10, label: "Actinides" }].forEach(r => {
+    const div = document.createElement("div");
+    div.className = "spacer-label";
+    div.style.gridRow = r.row;
+    div.style.gridColumn = "1 / 3";
+    div.textContent = r.label;
+    tableEl.appendChild(div);
+  });
+}
+buildTable();
+
+// ── LEGEND ──
+const legendEl = document.getElementById("legend");
+Object.entries(CATEGORY_LABELS).forEach(([key, label]) => {
+  const div = document.createElement("div");
+  div.className = "legend-item";
+  div.innerHTML = `<span class="legend-swatch" style="background:var(--${key})"></span>${label}`;
+  legendEl.appendChild(div);
+});
+
+// ── MODAL ──
+function showModal(z) {
+  const el = ELEMENTS.find(e => e[0] === z);
+  if (!el) return;
+  const [, sym, name, cat, , , mass, price, note] = el;
+  const isLive = liveData[z] !== undefined;
+  const dp = isLive ? liveData[z] : price;
+  const src = isLive ? "Live" : (price !== null ? "Reference" : "None");
+
+  const links = BUY_LINKS[z];
+  let buyHTML = "";
+  if (links) {
+    buyHTML = `<div class="buy-btn-row">${links.map(l =>
+      `<a class="buy-btn ${l.cls}" href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`
+    ).join("")}</div>`;
+  }
+
+  document.getElementById("modal-content").innerHTML = `
+    <div class="modal-num">#${z}</div>
+    <div class="modal-sym">${sym}</div>
+    <div class="modal-name">${name}</div>
+    <div class="modal-price ${dp === null ? 'no-price' : ''}">${dp === null ? "No Market Price" : formatPrice(dp)}</div>
+    <div class="modal-unit">${dp !== null ? "per troy ounce (31.1g)" : ""}</div>
+    <div>
+      <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value">${CATEGORY_LABELS[cat]||cat}</span></div>
+      <div class="detail-row"><span class="detail-label">Atomic Mass</span><span class="detail-value">${mass} u</span></div>
+      <div class="detail-row"><span class="detail-label">Price Source</span><span class="detail-value">${src}</span></div>
+      ${dp !== null && dp > 0 ? `
+      <div class="detail-row"><span class="detail-label">Price / gram</span><span class="detail-value">${formatPrice(dp / 31.1035)}</span></div>
+      <div class="detail-row"><span class="detail-label">Price / kg</span><span class="detail-value">${formatPrice(dp / 31.1035 * 1000)}</span></div>
+      ` : ""}
+      <div class="detail-row"><span class="detail-label">Note</span><span class="detail-value">${note}</span></div>
+    </div>
+    ${buyHTML}
+    <div class="modal-note">
+      ${dp === null
+        ? "This element has no meaningful market price."
+        : isLive
+          ? "Live price from metals market API. May have a short delay."
+          : "Reference price from USGS / CRC Handbook. May not reflect current spot."
+      }
+    </div>
+  `;
+  document.getElementById("modal-overlay").classList.add("open");
+}
+function closeModal(e) {
+  if (!e || e.target.id === "modal-overlay" || e.target.classList.contains("close-btn")) {
+    document.getElementById("modal-overlay").classList.remove("open");
+  }
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+// ── LIVE PRICES ──
+const liveData = {};
+const PROXY = "https://api.allorigins.win/raw?url=";
+
+// Source 1: gold-api.com for precious metals (free, no key, CORS-enabled)
+async function fetchGoldAPI() {
+  const metals = [
+    { sym: "XAU", z: 79 }, { sym: "XAG", z: 47 },
+    { sym: "XPT", z: 78 }, { sym: "XPD", z: 46 },
+  ];
+  await Promise.allSettled(
+    metals.map(async ({ sym, z }) => {
+      try {
+        const r = await fetch(`https://api.gold-api.com/price/${sym}`);
+        if (r.ok) { const d = await r.json(); if (d.price) liveData[z] = d.price; }
+      } catch(e) {}
+    })
+  );
+}
+
+// Source 2: goldprice.org (CORS-enabled, gold & silver with change data)
+async function fetchGoldPriceOrg() {
+  try {
+    const r = await fetch("https://data-asg.goldprice.org/dbXRates/USD");
+    if (r.ok) {
+      const d = await r.json();
+      if (d.items && d.items[0]) {
+        const item = d.items[0];
+        // Prices in $/oz
+        if (item.xauPrice) liveData[79] = item.xauPrice;
+        if (item.xagPrice) liveData[47] = item.xagPrice;
+      }
+    }
+  } catch(e) {}
+}
+
+// Source 3: Yahoo Finance via CORS proxy (base metals, commodities)
+// Fetched sequentially with delays to avoid proxy rate limits
+const YAHOO_METALS = [
+  { ticker: "HG=F",   z: 29, convert: p => p * 14.5833 },          // Copper $/lb → $/toz
+  { ticker: "ALI=F",  z: 13, convert: p => p * 31.1035 / 32150.7 }, // Aluminum $/mt → $/toz
+  { ticker: "GC=F",   z: 79, convert: p => p },                     // Gold (backup)
+  { ticker: "SI=F",   z: 47, convert: p => p },                     // Silver (backup)
+  { ticker: "PL=F",   z: 78, convert: p => p },                     // Platinum (backup)
+  { ticker: "PA=F",   z: 46, convert: p => p },                     // Palladium (backup)
+];
+
+// Sequential fetch with small delay between requests to respect proxy limits
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function fetchYahooViaProxy() {
+  for (const { ticker, z, convert } of YAHOO_METALS) {
+    try {
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+      const r = await fetch(PROXY + encodeURIComponent(yahooUrl));
+      if (r.ok) {
+        const d = await r.json();
+        const meta = d?.chart?.result?.[0]?.meta;
+        if (meta?.regularMarketPrice > 0) {
+          liveData[z] = convert(meta.regularMarketPrice);
+        }
+      }
+    } catch(e) {}
+    await delay(300); // 300ms between requests to avoid rate limits
+  }
+}
+
+// Source 4: Yahoo Finance via proxy for LME base metals (ETC price tracking)
+const YAHOO_ETC_METALS = [
+  { ticker: "NICK.L", z: 28 },  // Nickel ETC
+  { ticker: "ZINC.L", z: 30 },  // Zinc ETC
+  { ticker: "TINM.L", z: 50 },  // Tin ETC
+  { ticker: "LEED.L", z: 82 },  // Lead ETC
+];
+
+async function fetchBaseMetalETCs() {
+  for (const { ticker, z } of YAHOO_ETC_METALS) {
+    try {
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1mo`;
+      const r = await fetch(PROXY + encodeURIComponent(yahooUrl));
+      if (r.ok) {
+        const d = await r.json();
+        const meta = d?.chart?.result?.[0]?.meta;
+        const closes = d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+        if (meta && closes && closes.length >= 2) {
+          const prevClose = meta.chartPreviousClose || meta.previousClose;
+          let lastClose = null;
+          for (let i = closes.length - 1; i >= 0; i--) {
+            if (closes[i] !== null) { lastClose = closes[i]; break; }
+          }
+          if (prevClose && lastClose && prevClose > 0) {
+            const elData = ELEMENTS.find(e => e[0] === z);
+            const staticPrice = elData ? elData[7] : null;
+            if (staticPrice !== null) {
+              const pctChange = (lastClose - prevClose) / prevClose;
+              liveData[z] = staticPrice * (1 + pctChange);
+            }
+          }
+        }
+      }
+    } catch(e) {}
+    await delay(300);
+  }
+}
+
+function updatePriceCells() {
+  let liveCount = 0;
+  for (const [z, price] of Object.entries(liveData)) {
+    const priceEl = document.querySelector(`.price[data-z="${z}"]`);
+    if (priceEl) {
+      priceEl.textContent = formatPrice(price);
+      priceEl.className = "price live-price";
+      liveCount++;
+    }
+    const elData = ELEMENTS.find(e => e[0] === parseInt(z));
+    if (elData) elData[7] = price;
+  }
+  const now = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+  document.getElementById("status-bar").textContent = `${liveCount} live \u00b7 ${now}`;
+}
+
+// Stagger different API sources across refresh cycles
+let fetchCycle = 0;
+async function loadPrices() {
+  // Fast sources every cycle (gold-api + goldprice.org = 4 precious metals)
+  await Promise.allSettled([fetchGoldAPI(), fetchGoldPriceOrg()]);
+  updatePriceCells();
+
+  // Yahoo proxy sources every 3rd cycle (slower due to sequential + rate limits)
+  if (fetchCycle % 3 === 0) {
+    fetchYahooViaProxy().then(() => {
+      updatePriceCells();
+      // Fetch ETC base metals after futures complete
+      fetchBaseMetalETCs().then(() => updatePriceCells());
+    });
+  }
+  fetchCycle++;
+}
+loadPrices();
+setInterval(loadPrices, 10 * 1000); // Refresh every 10 seconds
+</script>
+</body>
+</html>
