@@ -350,7 +350,7 @@ const ELEMENTS = [
   [47,"Ag","Silver","transition",5,11,107.87,31,"Precious metal","XAG"],
   [48,"Cd","Cadmium","transition",5,12,112.41,0.07,"Industrial",null],
   [49,"In","Indium","post-transition",5,13,114.82,7.47,"Tech metal","INDIUM"],
-  [50,"Sn","Tin","post-transition",5,14,118.71,0.96,"LME traded","TIN"],
+  [50,"Sn","Tin","post-transition",5,14,118.71,1.62,"LME traded","TIN"],
   [51,"Sb","Antimony","metalloid",5,15,121.76,0.37,"Industrial",null],
   [52,"Te","Tellurium","metalloid",5,16,127.60,1.87,"Tech metal","TE"],
   [53,"I","Iodine","halogen",5,17,126.90,1.09,"Chemical",null],
@@ -938,6 +938,7 @@ async function fetchGoldPriceOrg() {
 const YAHOO_METALS = [
   { ticker: "HG=F",   z: 29, convert: p => p * 14.5833 },          // Copper $/lb → $/toz
   { ticker: "ALI=F",  z: 13, convert: p => p * 31.1035 / 32150.7 }, // Aluminum $/mt → $/toz
+  { ticker: "SN=F",   z: 50, convert: p => p * 31.1035 / 32150.7 }, // Tin $/mt → $/toz
   { ticker: "GC=F",   z: 79, convert: p => p },                     // Gold (backup)
   { ticker: "SI=F",   z: 47, convert: p => p },                     // Silver (backup)
   { ticker: "PL=F",   z: 78, convert: p => p },                     // Platinum (backup)
@@ -968,7 +969,6 @@ async function fetchYahooViaProxy() {
 const YAHOO_ETC_METALS = [
   { ticker: "NICK.L", z: 28 },  // Nickel ETC
   { ticker: "ZINC.L", z: 30 },  // Zinc ETC
-  { ticker: "TINM.L", z: 50 },  // Tin ETC
   { ticker: "LEED.L", z: 82 },  // Lead ETC
 ];
 
